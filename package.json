@@ -4,9 +4,12 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "generate": "turbo run generate",
+    "lint": "biome check .",
+    "lint:fix": "biome check . --write",
     "typecheck": "turbo run typecheck"
   },
   "devDependencies": {
+    "@biomejs/biome": "1.9.4",
     "turbo": "^2.5.4"
   },
   "engines": {
