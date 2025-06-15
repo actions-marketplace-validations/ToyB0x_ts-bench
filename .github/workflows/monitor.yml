@@ -1,10 +1,10 @@
 name: monitor
 on:
-  push:
-  workflow_dispatch:
+  pull_request:
 
 permissions:
   contents: read # for checkout repository
+  pull-requests: write # for creating/updating PR comments
 
 jobs:
   analyze:
@@ -45,4 +45,10 @@ jobs:
 
       - name: Analyze
         working-directory: apps/cli
-        run: node . analyze
+        run: node . analyze > report.md
+
+      - name: Create PR comment
+        working-directory: apps/cli
+        run: gh pr comment ${{ github.event.number }} --body-file report.md --edit-last --create-if-none # upsert the last comment
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
