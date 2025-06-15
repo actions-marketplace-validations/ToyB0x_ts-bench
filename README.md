@@ -1,11 +1,8 @@
-# repo-monitor
+# Repo Performance
 A tool to monitor various metrics of your repository
 
-# TODO
-- TSC計測
-  - CLI追加
-- TSCの変動観測
-  - TSC結果保存
-- MCPの作成
-  - リファクタ方針のDescribeの提供
-  - 計測Toolの提供
+# Roadmap
+- Graph display of report results for monitoring
+- Creation of MCP
+  - Provide description of refactoring policies
+  - Provide measurement tools
