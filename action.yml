@@ -1,0 +1,9 @@
+name: 'repo-monitor'
+author: 'ToyB0x'
+description: 'Analyze repository metrics'
+branding:
+  color: 'blue'
+  icon: 'activity'
+runs:
+  using: "docker"
+  image: "Dockerfile"
