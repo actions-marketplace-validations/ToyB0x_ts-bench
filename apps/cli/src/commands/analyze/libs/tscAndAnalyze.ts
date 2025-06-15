@@ -5,16 +5,16 @@ import { readAnalyzeData, readTraceFiles } from "./readFiles";
 
 export type TscResult =
   | {
-      status: "SUCCESS";
+      isSuccess: true;
       package: Awaited<ReturnType<typeof listPackages>>[number];
       numTrace: number;
       numType: number;
-      numHotSpots: number;
+      numHotSpot: number;
       durationMs: number;
-      durationMsHotSpots: number;
+      durationMsHotSpot: number;
     }
   | {
-      status: "FAILURE";
+      isSuccess: false;
       package: Awaited<ReturnType<typeof listPackages>>[number];
       durationMs: number;
       error: unknown;
@@ -36,17 +36,17 @@ export const tscAndAnalyze = async (
 
     return {
       package: pkg,
-      status: "SUCCESS",
+      isSuccess: true,
       numTrace: trace.length,
       numType: types.length,
-      numHotSpots: calculateHotSpotMetrics(analyze).numHotSpots,
+      numHotSpot: calculateHotSpotMetrics(analyze).numHotSpot,
       durationMs: calculateDuration(startTime),
-      durationMsHotSpots: calculateHotSpotMetrics(analyze).durationMsHotSpots,
+      durationMsHotSpot: calculateHotSpotMetrics(analyze).durationMsHotSpot,
     };
   } catch (error) {
     return {
       package: pkg,
-      status: "FAILURE",
+      isSuccess: false,
       durationMs: calculateDuration(startTime),
       error: String(error),
     };
