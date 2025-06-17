@@ -36,11 +36,17 @@ jobs:
             turbo/${{ github.job }}/${{ github.ref_name }}/
             turbo/${{ github.job }}/
 
+      - name: Prepare test env
+        run: cp .env.example .env
+
       - name: Lint
         run: pnpm lint
 
       - name: Build check
         run: pnpm build
+
+      - name: Pre-Render check
+        run: pnpm build:prerender
 
       - name: Type check
         run: pnpm typecheck
