@@ -1,7 +1,6 @@
-import process from "node:process";
+import * as process from "node:process";
 import { prisma } from "@repo/db";
-import { Welcome } from "~/welcome/welcome";
-import type { Route } from "./+types/home";
+import type { Route } from "./+types/packages.$name";
 
 // biome-ignore lint/correctness/noEmptyPattern: example code
 export function meta({}: Route.MetaArgs) {
@@ -11,7 +10,7 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-export async function loader() {
+export async function loader({ params }: Route.LoaderArgs) {
   // NOTE: workaround for Prisma RLS issues in development and CI environments
   // https://github.com/prisma/prisma/issues/27085
   // https://github.com/prisma/prisma/issues/27212
@@ -19,25 +18,37 @@ export async function loader() {
   if (!process.env?.["DATABASE_URL"]) return [];
 
   return prisma.result.findMany({
-    distinct: ["package"],
-    orderBy: {
-      package: "asc",
+    where: {
+      package: `${params.scope}/${params.name}`,
     },
     select: {
       package: true,
+      scan: {
+        select: {
+          commitHash: true,
+          commitMessage: true,
+          createdAt: true,
+        },
+      },
     },
+    orderBy: {
+      scan: {
+        createdAt: "desc",
+      },
+    },
+    take: 100,
   });
 }
 
 export default function Page({ loaderData }: Route.ComponentProps) {
+  const results = loaderData;
+  console.log(results);
+  const name = results[0]?.package || "Unknown Package";
+
   return (
     <div>
-      {loaderData.map(({ package: pkg }) => (
-        <a key={pkg} href={`/packages/${pkg}`}>
-          {pkg}
-        </a>
-      ))}
-      <Welcome />
+      <h1>{name}</h1>
+      <pre>{JSON.stringify(results)}</pre>
     </div>
   );
 }
