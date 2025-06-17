@@ -1,17 +1,17 @@
 {
-  "name": "@repo/cli",
+  "name": "@ts-bench/cli",
   "type": "module",
   "main": "./dist/index.js",
   "scripts": {
     "dev": "tsup --watch",
     "build": "tsup",
     "test": "vitest",
-    "analyze": "dotenvx run -f .env -- node . analyze",
+    "analyze": "dotenvx run -f .env --quiet -- node . analyze",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@dotenvx/dotenvx": "1.44.2",
-    "@repo/db": "workspace:*",
+    "@ts-bench/db": "workspace:*",
     "@supercharge/promise-pool": "3.2.0",
     "@typescript/analyze-trace": "0.10.1",
     "commander": "14.0.0",
