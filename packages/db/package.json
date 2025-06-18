@@ -1,0 +1,42 @@
+{
+  "name": "@ts-bench/db",
+  "version": "0.0.3",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/client.ts",
+      "default": "./src/client.ts"
+    }
+  },
+  "scripts": {
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed": "tsx src/seed.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.15.9",
+    "dotenv": "^16.5.0",
+    "drizzle-orm": "^0.44.2"
+  },
+  "devDependencies": {
+    "@tsconfig/strictest": "2.0.5",
+    "@types/node": "24.0.3",
+    "drizzle-kit": "^0.31.1",
+    "tsx": "4.20.3",
+    "typescript": "5.8.3"
+  },
+  "author": "ToyB0x",
+  "license": "MIT",
+  "homepage": "https://github.com/ToyB0x/ts-bench",
+  "bugs": {
+    "url": "https://github.com/ToyB0x/ts-bench/issues"
+  },
+  "NOTE: 利用側はtsxやvite経由で本パッケージを.tsファイルのまま利用することを想定しているため、distフォルダは生成しない": "",
+  "files": [
+    "src/",
+    "drizzle/",
+    "drizzle.config.ts",
+    "tsconfig.json"
+  ]
+}
