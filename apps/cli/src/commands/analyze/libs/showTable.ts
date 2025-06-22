@@ -1,79 +1,45 @@
-import { db, type resultTbl } from "@ts-bench/db";
-import type { TscResult } from "./tscAndAnalyze";
+import { db } from "@ts-bench/db";
 
-type Result = typeof resultTbl.$inferSelect;
-
-export const showTable = async (results: TscResult[]) => {
+export const showTable = async () => {
   const recentScans = await db.query.scanTbl.findMany({
-    limit: 10,
-    offset: 1, // Skip the most recent scan (current scan) to avoid showing it in the table
-    orderBy: (scan, { desc }) => desc(scan.createdAt),
+    limit: 2,
+    orderBy: (scan, { desc }) => desc(scan.commitDate),
     with: {
       results: true,
     },
   });
 
-  const lastResult = recentScans.slice(0, 1).flatMap((scan) => scan.results);
-  // const recentResults = recentScans.flatMap((scan) => scan.results);
+  const [currentScan, prevScan] = recentScans;
+  if (!currentScan) {
+    console.warn("No current scan results found to show table.");
+    return;
+  }
 
   console.log("```");
   console.table(
-    results
+    currentScan.results
       .sort((a, b) =>
-        a.isSuccess && b.isSuccess
-          ? b.numType - a.numType
-          : b.durationMs - a.durationMs,
+        a.isSuccess && b.isSuccess && a.traceNumType && b.traceNumType
+          ? b.traceNumType - a.traceNumType
+          : b.package.localeCompare(a.package),
       )
       .map((r) =>
         r.isSuccess
-          ? // ? {
-            //     package: r.package.name,
-            //     "types (diff recent 1 | recent 10)": `${r.numType} (${calcDiff(calcAverage(lastResult, r.package.name, "numType"), r.numType)} | ${calcDiff(calcAverage(recentResults, r.package.name, "numType"), r.numType)})`,
-            //     traces: `${r.numTrace} (${calcDiff(calcAverage(lastResult, r.package.name, "numTrace"), r.numTrace)} | ${calcDiff(calcAverage(recentResults, r.package.name, "numTrace"), r.numTrace)})`,
-            //     ms: `${r.durationMs} (${calcDiff(calcAverage(lastResult, r.package.name, "durationMs"), r.durationMs)} | ${calcDiff(calcAverage(recentResults, r.package.name, "durationMs"), r.durationMs)})`,
-            //     hotSpots: `${r.numHotSpot} (${calcDiff(calcAverage(lastResult, r.package.name, "numHotSpot"), r.numHotSpot)} | ${calcDiff(calcAverage(recentResults, r.package.name, "numHotSpot"), r.numHotSpot)})`,
-            //     hotSpotMs: `${r.durationMsHotSpot} (${calcDiff(calcAverage(lastResult, r.package.name, "durationMsHotSpot"), r.durationMsHotSpot)} | ${calcDiff(calcAverage(recentResults, r.package.name, "durationMsHotSpot"), r.durationMsHotSpot)})`,
-            //   }
-            // : {
-            //     package: r.package.name,
-            //     ms: `${r.durationMs} (${calcDiff(calcAverage(lastResult, r.package.name, "durationMs"), r.durationMs)} | ${calcDiff(calcAverage(recentResults, r.package.name, "durationMs"), r.durationMs)})`,
-            //     error: String(r.error),
-            //   },
-            // NOTE: The above commented code is replaced with the following to avoid showing the recent 10 data in the table
-            {
-              package: r.package.name,
-              types: `${r.numType} (${calcDiff(calcAverage(lastResult, r.package.name, "numType"), r.numType)})`,
-              traces: `${r.numTrace} (${calcDiff(calcAverage(lastResult, r.package.name, "numTrace"), r.numTrace)})`,
-              ms: `${r.durationMs} (${calcDiff(calcAverage(lastResult, r.package.name, "durationMs"), r.durationMs)})`,
-              hotSpots: `${r.numHotSpot} (${calcDiff(calcAverage(lastResult, r.package.name, "numHotSpot"), r.numHotSpot)})`,
-              hotSpotMs: `${r.durationMsHotSpot} (${calcDiff(calcAverage(lastResult, r.package.name, "durationMsHotSpot"), r.durationMsHotSpot)})`,
+          ? {
+              package: r.package,
+              traceTypes: `${r.traceNumType} (${calcDiff(!prevScan ? 0 : prevScan.results.find((prev) => prev.package === r.package)?.traceNumType || 0, r.traceNumType || 0)})`,
+              traceTypesSize: `${r.traceFileSizeType} (${calcDiff(!prevScan ? 0 : prevScan.results.find((prev) => prev.package === r.package)?.traceFileSizeType || 0, r.traceFileSizeType || 0)})`,
+              totalTime: `${r.totalTime}s (${calcDiff(!prevScan ? 0 : prevScan.results.find((prev) => prev.package === r.package)?.totalTime || 0, r.totalTime || 0)})`,
+              memoryUsed: `${r.memoryUsed}K (${calcDiff(!prevScan ? 0 : prevScan.results.find((prev) => prev.package === r.package)?.memoryUsed || 0, r.memoryUsed || 0)})`,
+              analyzeHotSpotMs: `${r.analyzeHotSpotMs}ms (${calcDiff(!prevScan ? 0 : prevScan.results.find((prev) => prev.package === r.package)?.analyzeHotSpotMs || 0, r.analyzeHotSpotMs || 0)})`,
             }
           : {
-              package: r.package.name,
-              ms: `${r.durationMs} (${calcDiff(calcAverage(lastResult, r.package.name, "durationMs"), r.durationMs)})`,
+              package: r.package,
               error: String(r.error),
             },
       ),
   );
   console.log("```");
-};
-
-// calculate average values for a specific package and column with given results
-const calcAverage = (
-  results: Result[],
-  packageName: Result["package"],
-  column: keyof Pick<
-    Result,
-    "numTrace" | "numType" | "numHotSpot" | "durationMs" | "durationMsHotSpot"
-  >,
-): number => {
-  const matchingResults = results.filter((r) => r.package === packageName);
-
-  return (
-    matchingResults
-      .map((r) => r[column])
-      .reduce((acc, value) => acc + value, 0) / matchingResults.length
-  );
 };
 
 // calculate the difference between two numbers

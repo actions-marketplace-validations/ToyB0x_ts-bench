@@ -12,9 +12,9 @@ export const makeAnalyzeCommand = () => {
     .command("tsc", { isDefault: true })
     .description("check tsc performance")
     .action(async () => {
-      const enableForceMigrationConflict = false;
+      const enableForceMigrationConflict = true;
       await migrateDb(enableForceMigrationConflict);
-      await runBench();
+      await runBench().catch(console.error);
     });
 
   analyze
@@ -68,7 +68,7 @@ export const makeAnalyzeCommand = () => {
         "HEAD",
       ]);
 
-      const enableForceMigrationConflict = false;
+      const enableForceMigrationConflict = true;
       await migrateDb(enableForceMigrationConflict);
 
       // list commits

@@ -12,6 +12,10 @@ export const saveResultsToDatabase = async (
     ? gihubFullName.split("/")
     : [];
 
+  const { latest: currentCommit } = await simpleGit().log(["--shortstat"]);
+  if (!currentCommit)
+    throw Error("Please run this command on a clean working tree.");
+
   const { value: gitRepo } = await simpleGit().getConfig("remote.origin.url");
   // git@github.com:ToyB0x/repo-monitor.git --> ToyB0x
   const owner =
@@ -27,32 +31,28 @@ export const saveResultsToDatabase = async (
       ? gitRepo.split("/").pop()?.replace(".git", "") || "unknown"
       : "unknown");
 
-  const { latest } = await simpleGit().log();
-  if (!latest) return;
+  const insertionScan: typeof scanTbl.$inferInsert = {
+    version,
+    owner,
+    changed: currentCommit.diff?.changed,
+    files: currentCommit.diff?.files.length,
+    insertions: currentCommit.diff?.insertions,
+    deletions: currentCommit.diff?.deletions,
+    repository: repoName,
+    commitHash: currentCommit.hash,
+    commitMessage: currentCommit.message,
+    commitDate: new Date(currentCommit.date),
+    scannedAt: new Date(),
+    cpus: cpus.join(", "),
+  };
 
   await db.transaction(async (tx) => {
     const scan = await tx
       .insert(scanTbl)
-      .values({
-        version,
-        owner,
-        repository: repoName,
-        commitHash: latest.hash,
-        commitMessage: latest.message,
-        commitDate: new Date(latest.date),
-        createdAt: new Date(),
-        cpus: cpus.join(", "),
-      })
+      .values(insertionScan)
       .onConflictDoUpdate({
         target: [scanTbl.repository, scanTbl.commitHash],
-        set: {
-          version,
-          owner,
-          commitMessage: latest.message,
-          commitDate: new Date(latest.date),
-          createdAt: new Date(),
-          cpus: cpus.join(", "),
-        },
+        set: insertionScan,
       })
       .returning();
 
@@ -60,42 +60,21 @@ export const saveResultsToDatabase = async (
     if (!scanId)
       throw new Error("Failed to create scan entry in the database.");
 
-    const insertion: (typeof resultTbl.$inferInsert)[] = [
-      ...results
-        .filter((r) => r.isSuccess)
-        .map((r) => ({
-          ...r,
-          scanId,
-          package: r.package.name,
-        })),
-      ...results
-        .filter((r) => !r.isSuccess)
-        .map((r) => ({
-          ...r,
-          scanId,
-          error: String(r.error),
-          package: r.package.name,
-          numType: 0,
-          numTrace: 0,
-          numHotSpot: 0,
-          durationMs: r.durationMs || 0,
-          durationMsHotSpot: 0,
-        })),
+    const insertionResults: (typeof resultTbl.$inferInsert)[] = [
+      ...results.map((r) => ({
+        ...r,
+        scanId,
+        package: r.package.name,
+        error: r.isSuccess ? null : String(r.error),
+      })),
     ];
 
     await tx
       .insert(resultTbl)
-      .values(insertion)
+      .values(insertionResults)
       .onConflictDoUpdate({
         target: [resultTbl.scanId, resultTbl.package],
-        set: {
-          numType: resultTbl.numType,
-          numTrace: resultTbl.numTrace,
-          numHotSpot: resultTbl.numHotSpot,
-          durationMs: resultTbl.durationMs,
-          durationMsHotSpot: resultTbl.durationMsHotSpot,
-          error: resultTbl.error,
-        },
+        set: resultTbl,
       });
   });
 };
