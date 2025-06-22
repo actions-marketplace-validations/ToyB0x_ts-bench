@@ -35,8 +35,7 @@ export default function Page({ loaderData }: Route.ComponentProps) {
 
   return (
     <>
-      <ChartAreaInteractiveExample />
-      <ul className="list-disc mt-4 pl-6">
+      <div className="mt-4 p-6 grid grid-cols-2 gap-5">
         {packages.map(({ package: pkg }) => (
           <ChartAreaInteractive
             key={pkg}
@@ -45,7 +44,8 @@ export default function Page({ loaderData }: Route.ComponentProps) {
             )}
           />
         ))}
-      </ul>
+        <ChartAreaInteractiveExample />
+      </div>
       <ul className="list-disc mt-4 pl-6">
         {packages.map(({ package: pkg }) => (
           <li key={pkg}>
