@@ -4,9 +4,9 @@
   "globalEnv": ["DB_FILE_NAME"], // Environment variables to be used globally
   "tasks": {
     "db:generate": {
-      "cache": false, // Disable caching for db:generate code in node_modules
       "dependsOn": ["^db:generate"],
-      "inputs": ["prisma/**"]
+      "inputs": ["packages/db/src/**"],
+      "outputs": ["packages/db/drizzle/**"]
     },
     "db:migrate": {
       "cache": false, // Disable caching for sql file generation
