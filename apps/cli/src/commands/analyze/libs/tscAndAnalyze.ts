@@ -8,6 +8,7 @@ import { readAnalyzeData, readTraceFiles } from "./readFiles";
 
 export type TscResult =
   | ({
+      isCached: boolean;
       isSuccess: true;
       package: Awaited<ReturnType<typeof listPackages>>[number];
       /* trace results */
@@ -21,6 +22,7 @@ export type TscResult =
       analyzeFileSize: number;
     } & Awaited<ReturnType<typeof npxTscWithTrace>>)
   | {
+      isCached: boolean;
       isSuccess: false;
       package: Awaited<ReturnType<typeof listPackages>>[number];
       error: unknown;
@@ -28,11 +30,14 @@ export type TscResult =
 
 export const tscAndAnalyze = async (
   pkg: Awaited<ReturnType<typeof listPackages>>[number],
+  cachedPackages: string[],
 ): Promise<TscResult> => {
+  const isCached = cachedPackages.includes(pkg.name);
+
   try {
     // execute tsc with trace
-    const tscResults = await npxTscWithTrace(pkg);
-    await npxAnalyzeTrace(pkg);
+    const tscResults = await npxTscWithTrace(pkg, isCached);
+    await npxAnalyzeTrace(pkg, isCached);
 
     // read results from files
     const { trace, types } = await readTraceFiles(pkg);
@@ -41,6 +46,7 @@ export const tscAndAnalyze = async (
     const tracePath = path.join(pkg.absolutePath, TRACE_FILES_DIR);
 
     return {
+      isCached,
       package: pkg,
       isSuccess: true,
       /* trace results */
@@ -57,6 +63,7 @@ export const tscAndAnalyze = async (
   } catch (error) {
     console.error(error);
     return {
+      isCached,
       package: pkg,
       isSuccess: false,
       error: String(error),

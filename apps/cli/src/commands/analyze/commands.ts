@@ -1,7 +1,11 @@
 import { Command, Option } from "@commander-js/extra-typings";
 import { migrateDb } from "@ts-bench/db";
 import { simpleGit } from "simple-git";
-import { listCommits, runPreprpareCommands } from "./libs";
+import {
+  listCachedPackagesByTurboTypeCheck,
+  listCommits,
+  runPreprpareCommands,
+} from "./libs";
 import { runBench } from "./runBench";
 
 export const makeAnalyzeCommand = () => {
@@ -47,10 +51,29 @@ export const makeAnalyzeCommand = () => {
         "prepare / setup commands to run before analyze",
       ).default(["pnpm install --reporter=silent", "pnpm build"] as string[]),
     )
+
+    // TODO: enable this in the future
+    // option: specify commands for detect affected packages
+    // .addOption(
+    //   new Option(
+    //     "-d, --detect-affected-commands <commands...>",
+    //     "commands to run for detect affected packages",
+    //   ).default("turbo run typecheck --dry-run"),
+    // )
+
+    // option: enable turbo cache (hard coded commands)
+    // TODO: refactor this to pass commands as option (eg, typecheck, type-check, check-type, tsc, etc)
+    .addOption(
+      new Option(
+        "-c, --enable-turbo-cache-by-typecheck <boolean>",
+        "enable turbo cache by exist typecheck command (default: false)",
+      ).default(false),
+    )
+
     // option: specify working directory for prepare commands
     .addOption(
       new Option(
-        "-d, --working-dir <dir>",
+        "-w, --working-dir <dir>",
         "working directory for prepare commands (default: current directory)",
       ).default("."),
     )
@@ -58,8 +81,8 @@ export const makeAnalyzeCommand = () => {
     .addOption(
       new Option(
         "-m, --timeout <minutes>",
-        "timeout in minutes (default: 60)",
-      ).default(60),
+        "timeout in minutes (default: 180)",
+      ).default(180),
     )
     .action(async (options) => {
       // console.info({ options });
@@ -87,8 +110,18 @@ export const makeAnalyzeCommand = () => {
             options.prepareCommands,
             options.workingDir,
           );
+
+          const cachedPackages: string[] = !options.enableTurboCacheByTypecheck
+            ? []
+            : listCachedPackagesByTurboTypeCheck(options.workingDir);
+
+          // NOTE: if enable cached mode, it will wait all affected packages scan in same git commit
+          // eg: speed up case
+          // eg, cpu 4 / all package 12 / affected 4: 3x faster than no cache (cpu cycle count decrease to 1/3)
+          // eg, cpu 4 / all package 12 / affected 5: 2x faster than no cache (cpu cycle count decrease to 1/2)
+          // eg, cpu 4 / all package  4 / affected 1:  same speed as no cache (cpu cycle count never change)
           const enableShowTable = false;
-          await runBench(enableShowTable);
+          await runBench(enableShowTable, cachedPackages);
         } catch (error) {
           errorCount += 1;
           console.error(
