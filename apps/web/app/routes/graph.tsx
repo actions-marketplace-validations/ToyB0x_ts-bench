@@ -1,7 +1,8 @@
 import { db, resultTbl } from "@ts-bench/db";
+import { Link } from "react-router";
 import { ChartAreaInteractive } from "~/components/parts/chart-area";
 import { ChartAreaInteractiveExample } from "~/components/parts/chart-area-example";
-import type { Route } from "./+types/home";
+import type { Route } from "./+types/graph";
 
 // biome-ignore lint/correctness/noEmptyPattern: example code
 export function meta({}: Route.MetaArgs) {
@@ -54,13 +55,17 @@ export default function Page({ loaderData }: Route.ComponentProps) {
 
         <ChartAreaInteractiveExample />
       </div>
-      <ul className="list-disc mt-4 pl-6">
-        {packages.map(({ package: pkg }) => (
-          <li key={pkg}>
-            <a href={`/packages/${pkg}`}>{pkg}</a>
-          </li>
-        ))}
-      </ul>
+
+      <div className="mt-8 p-6">
+        <h2 className="text-2xl font-bold">Packages Detail Insight</h2>
+        <ul className="list-disc mt-4 pl-6">
+          {packages.map(({ package: pkg }) => (
+            <li key={pkg}>
+              <Link to={`./${pkg}`}>{pkg}</Link>
+            </li>
+          ))}
+        </ul>
+      </div>
     </>
   );
 }
