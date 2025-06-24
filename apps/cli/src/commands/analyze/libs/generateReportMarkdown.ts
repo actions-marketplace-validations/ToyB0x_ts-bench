@@ -1,6 +1,13 @@
+import { writeFileSync } from "node:fs";
 import { db } from "@ts-bench/db";
+import tablemark from "tablemark";
+import { version } from "../../../../package.json";
 
-export const showTable = async () => {
+export const generateReportMarkdown = async (
+  cpuModelAndSpeeds: string[],
+  maxConcurrency: number,
+  totalCPUs: number,
+) => {
   const recentScans = await db.query.scanTbl.findMany({
     limit: 2,
     orderBy: (scan, { desc }) => desc(scan.commitDate),
@@ -11,12 +18,15 @@ export const showTable = async () => {
 
   const [currentScan, prevScan] = recentScans;
   if (!currentScan) {
-    console.warn("No current scan results found to show table.");
-    return;
+    throw Error("No current scan results found to show table.");
   }
 
-  console.log("```");
-  console.table(
+  let mdContent = `
+**Tsc benchmark ${maxConcurrency} / ${totalCPUs} CPUs** (compared to ${prevScan ? prevScan.commitHash : "N/A"})
+
+`;
+
+  mdContent += tablemark(
     currentScan.results
       .sort((a, b) =>
         a.isSuccess && b.isSuccess && a.traceNumType && b.traceNumType
@@ -35,11 +45,33 @@ export const showTable = async () => {
             }
           : {
               package: r.package,
-              error: String(r.error),
+              traceTypes: "Error",
+              traceTypesSize: "",
+              totalTime: "",
+              memoryUsed: "",
+              analyzeHotSpotMs: "",
             },
       ),
+    {
+      columns: [
+        { align: "left" }, // package
+        { align: "right" }, // traceTypes
+        { align: "right" }, // traceTypesSize
+        { align: "right" }, // totalTime
+        { align: "right" }, // memoryUsed
+        { align: "right" }, // analyzeHotSpotMs
+        { align: "left" }, // error
+      ],
+    },
   );
-  console.log("```");
+
+  mdContent += `
+<p align="right">v${version} (${cpuModelAndSpeeds.join(", ")})</p>
+`;
+
+  // write to ts-bench-report.md file
+  const reportPath = "ts-bench-report.md";
+  writeFileSync(reportPath, mdContent, "utf8");
 };
 
 // calculate the difference between two numbers
