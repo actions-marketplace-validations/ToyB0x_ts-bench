@@ -1,6 +1,6 @@
 import { writeFileSync } from "node:fs";
 import { GoogleGenAI } from "@google/genai";
-import { db } from "@ts-bench/db";
+import { db, eq, scanTbl } from "@ts-bench/db";
 import { simpleGit } from "simple-git";
 import type { TablemarkOptions } from "tablemark";
 import tablemark from "tablemark";
@@ -239,9 +239,18 @@ export const generateReportMarkdown = async (
           // - 提案: suggestion
           type: "object",
           properties: {
-            impact: { type: "string" },
-            reason: { type: "string" },
-            suggestion: { type: "string" },
+            impact: { type: "string", description: "影響を1行以内に記載" },
+            reason: {
+              type: "string",
+              description: `影響(必ず1行以内に収めて記載): 変更がリポジトリに与える影響(以下のフォーマットで簡潔に記載)
+xxx個のパッケージの(ビルド|IDE|ビルドとIDE)がyyy(かなり|少し|無視できる範囲で)遅くなります
+`,
+            },
+            suggestion: {
+              type: "string",
+              description:
+                "提案(必ず1行以内に収めて記載): もしも改善や対応、判断が必要であれば、何をすべきかを提案する",
+            },
           },
           required: ["impact", "reason", "suggestion"],
         },
@@ -307,12 +316,21 @@ ${summaryContent.title}
 ${
   aiResponseStructured
     ? `
-- Impact: ${aiResponseStructured.impact}
-- Reason: ${aiResponseStructured.reason}
-- Suggestion: ${aiResponseStructured.suggestion}
+${aiResponseStructured.impact}
+
+<details><summary><strong>原因と提案</strong></summary>
+
+- **原因**:  
+  ${aiResponseStructured.reason}
+- **提案**:  
+  ${aiResponseStructured.suggestion}
+</details>
+
 `
     : summaryContent.text
 }
+
+<details><summary>Details</summary>
 
 ${contentTablePlus.text ? contentTablePlus.title : ""}
 ${contentTablePlus.text || ""}
@@ -322,12 +340,9 @@ ${contentTableMinus.text || ""}
 
 ${contentTableCache.text ? contentTableCache.title : ""}
 ${contentTableCache.text || ""}
+</details>
 
-<p align="right">Compared to ${prevScan ? prevScan.commitHash : "N/A"}</p>
-
----
-
-<details><summary><strong>Open Details</strong></summary>
+<details><summary>Full Details</summary>
 
 - TSC Benchmark version: ${version}
 - CPU: ${cpuModelAndSpeeds.join(", ")} (${maxConcurrency} / ${totalCPUs})
@@ -351,11 +366,17 @@ ${prevScan ? printSimpleTable(prevScan.results).trim() : "N/A"}
 </details>
 
 </details>
+
+<p align="right">Compared to ${prevScan ? prevScan.commitHash : "N/A"}</p>
+
 `;
 
   // write to ts-bench-report.md file
   const reportPath = "ts-bench-report.md";
   writeFileSync(reportPath, mdContent, "utf8");
+
+  // TODO: refactor (レポート生成の中でDB更新しているのはよくない)
+  await updateDatabaseWithAIComments(currentScan.id, aiResponseStructured);
 };
 
 // TODO: diff だけではなく、元の数値も出すと便利かも(パーセンテージではなく、絶対値も表示することを検討)
@@ -371,4 +392,21 @@ const calcDiff = (before: number, after: number): string => {
 
   const sign = diff >= 0 ? "+" : "-";
   return ` (${sign}${diffFixedLength}%)`; // eg: 半角スペース (1.1%)
+};
+
+const updateDatabaseWithAIComments = async (
+  scanId: number,
+  aiResponse:
+    | { impact?: string; reason?: string; suggestion?: string }
+    | undefined,
+): Promise<void> => {
+  if (!aiResponse) return;
+  await db
+    .update(scanTbl)
+    .set({
+      aiCommentImpact: aiResponse.impact,
+      aiCommentReason: aiResponse.reason,
+      aiCommentSuggestion: aiResponse.suggestion,
+    })
+    .where(eq(scanTbl.id, scanId));
 };
