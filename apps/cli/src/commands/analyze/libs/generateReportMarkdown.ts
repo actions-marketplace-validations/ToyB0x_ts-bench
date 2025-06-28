@@ -227,10 +227,17 @@ export const generateReportMarkdown = async (
 
     const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
-    const diff = await simpleGit().diff();
+    const diff = process.env["CI"]
+      ? // use gh command to get diff in GitHub Actions
+        await simpleGit().raw(["diff", "--no-color", "HEAD^", "HEAD"])
+      : // in local development, use diff from current branch last commit to main branch head commit
+        await simpleGit().raw(["diff", "--no-color", "HEAD^", "origin/main"]);
+
+    console.info({ diff });
 
     const aiResponse = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      // TODO: enable switch to gemini-2.5-flash or other models via CLI option
+      model: process.env["GEMINI_MODEL"] || "gemini-2.5-flash",
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -239,12 +246,17 @@ export const generateReportMarkdown = async (
           // - 提案: suggestion
           type: "object",
           properties: {
-            impact: { type: "string", description: "影響を1行以内に記載" },
-            reason: {
+            impact: {
               type: "string",
-              description: `影響(必ず1行以内に収めて記載): 変更がリポジトリに与える影響(以下のフォーマットで簡潔に記載)
+              description: `影響: types、instantiationsまたはキャッシュ関連の指標から推測される、分析対象のコード変更がリポジトリに与える影響(以下のフォーマットで簡潔に記載)
 xxx個のパッケージの(ビルド|IDE|ビルドとIDE)がyyy(かなり|少し|無視できる範囲で)遅くなります
 `,
+            },
+            reason: {
+              type: "string",
+              description: `Git diffの結果から推測される、types、instantiationsまたはキャッシュ関連の指標に変動が影響が生じた理由(出来るだけ以下フォーマットで簡潔に記載。複数の原因がありそうな場合は適宜フォーマットを調整)
+xxxのファイルに対するyyyの変更により、zzzが変動した可能性があります
+          `,
             },
             suggestion: {
               type: "string",
