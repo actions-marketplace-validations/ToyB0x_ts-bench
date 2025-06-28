@@ -1,6 +1,6 @@
 import { writeFileSync } from "node:fs";
 import { GoogleGenAI } from "@google/genai";
-import { db, eq, scanTbl } from "@ts-bench/db";
+import { db, eq, type resultTbl, scanTbl } from "@ts-bench/db";
 import { simpleGit } from "simple-git";
 import type { TablemarkOptions } from "tablemark";
 import tablemark from "tablemark";
@@ -74,6 +74,81 @@ export const generateReportMarkdown = async (
             strictSubtypeCacheSize: "",
           },
     );
+
+  // Helper function to generate metric summary
+  const generateMetricSummary = (
+    currentResults: typeof currentScan.results,
+    prevResults: NonNullable<typeof prevScan>["results"] | undefined,
+    metric: keyof typeof resultTbl.$inferSelect,
+  ) => {
+    const currentTotal = calculateTotal(currentResults, metric);
+    const prevTotal = prevResults ? calculateTotal(prevResults, metric) : 0;
+    return `${currentTotal}${calcDiff(prevTotal, currentTotal)}`;
+  };
+
+  // summary row for all packages (Total)
+  const totalSummaryRow = {
+    package: "Total Summary",
+    types: generateMetricSummary(
+      currentScan.results,
+      prevScan?.results,
+      "types",
+    ),
+    instantiations: generateMetricSummary(
+      currentScan.results,
+      prevScan?.results,
+      "instantiations",
+    ),
+    traceTypesSize: generateMetricSummary(
+      currentScan.results,
+      prevScan?.results,
+      "traceNumType",
+    ),
+    totalTime: generateMetricSummary(
+      currentScan.results,
+      prevScan?.results,
+      "totalTime",
+    ),
+    memoryUsed: generateMetricSummary(
+      currentScan.results,
+      prevScan?.results,
+      "memoryUsed",
+    ),
+    analyzeHotSpotMs:
+      calculateTotal(currentScan.results, "analyzeHotSpotMs") +
+      `${calcDiff(
+        !prevScan ? 0 : calculateTotal(prevScan.results, "analyzeHotSpotMs"),
+        calculateTotal(currentScan.results, "analyzeHotSpotMs"),
+      )}`,
+    assignabilityCacheSize:
+      calculateTotal(currentScan.results, "assignabilityCacheSize") +
+      `${calcDiff(
+        !prevScan
+          ? 0
+          : calculateTotal(prevScan.results, "assignabilityCacheSize"),
+        calculateTotal(currentScan.results, "assignabilityCacheSize"),
+      )}`,
+    identityCacheSize:
+      calculateTotal(currentScan.results, "identityCacheSize") +
+      `${calcDiff(
+        !prevScan ? 0 : calculateTotal(prevScan.results, "identityCacheSize"),
+        calculateTotal(currentScan.results, "identityCacheSize"),
+      )}`,
+    subtypeCacheSize:
+      calculateTotal(currentScan.results, "subtypeCacheSize") +
+      `${calcDiff(
+        !prevScan ? 0 : calculateTotal(prevScan.results, "subtypeCacheSize"),
+        calculateTotal(currentScan.results, "subtypeCacheSize"),
+      )}`,
+    strictSubtypeCacheSize:
+      calculateTotal(currentScan.results, "strictSubtypeCacheSize") +
+      `${calcDiff(
+        !prevScan
+          ? 0
+          : calculateTotal(prevScan.results, "strictSubtypeCacheSize"),
+        calculateTotal(currentScan.results, "strictSubtypeCacheSize"),
+      )}`,
+  };
 
   const tables = {
     plus: tableRows
@@ -189,6 +264,11 @@ export const generateReportMarkdown = async (
     text: summaryText,
   };
 
+  const contentTotalSummary: ReportContent = {
+    title: "### Total Summary",
+    text: tablemark([totalSummaryRow], tablemarkOptions),
+  };
+
   const contentTablePlus: ReportContent = {
     title: "#### :tada: Faster packages",
     text: tables.minus.length
@@ -299,6 +379,9 @@ xxxのファイルに対するyyyの変更により、zzzが変動した可能�
 ${summaryContent.title}
 ${summaryContent.text}
 
+${contentTotalSummary.title}
+${contentTotalSummary.text}
+
 ${contentTablePlus.text ? contentTablePlus.title : ""}
 ${contentTablePlus.text || ""}
 
@@ -344,6 +427,9 @@ ${
   !hasAnyImportantBuildChanges && !hasAnyImportantCacheChanges
     ? ""
     : `<details><summary>Details</summary>
+
+${contentTotalSummary.title}
+${contentTotalSummary.text}
 
 ${contentTablePlus.text ? contentTablePlus.title : ""}
 ${contentTablePlus.text || ""}
@@ -425,4 +511,15 @@ const updateDatabaseWithAIComments = async (
       aiCommentSuggestion: aiResponse.suggestion,
     })
     .where(eq(scanTbl.id, scanId));
+};
+
+// 指定されたフィールドの合計値を計算する共通関数
+const calculateTotal = (
+  results: (typeof resultTbl.$inferSelect)[],
+  field: keyof typeof resultTbl.$inferSelect,
+): number => {
+  return results.reduce(
+    (total, current) => total + ((current[field] as number) || 0),
+    0,
+  );
 };
