@@ -54,6 +54,10 @@ export const generateReportMarkdown = async (
             totalTime: `${r.totalTime}s${calcDiff(!prevScan ? 0 : prevScan.results.find((prev) => prev.package === r.package)?.totalTime || 0, r.totalTime || 0)}`,
             memoryUsed: `${r.memoryUsed}K${calcDiff(!prevScan ? 0 : prevScan.results.find((prev) => prev.package === r.package)?.memoryUsed || 0, r.memoryUsed || 0)}`,
             // analyzeHotSpotMs: `${r.analyzeHotSpotMs}ms${calcDiff(!prevScan ? 0 : prevScan.results.find((prev) => prev.package === r.package)?.analyzeHotSpotMs || 0, r.analyzeHotSpotMs || 0)}`,
+            assignabilityCacheSize: `${r.assignabilityCacheSize}K${calcDiff(!prevScan ? 0 : prevScan.results.find((prev) => prev.package === r.package)?.assignabilityCacheSize || 0, r.assignabilityCacheSize || 0)}`,
+            identityCacheSize: `${r.identityCacheSize}K${calcDiff(!prevScan ? 0 : prevScan.results.find((prev) => prev.package === r.package)?.identityCacheSize || 0, r.identityCacheSize || 0)}`,
+            subtypeCacheSize: `${r.subtypeCacheSize}K${calcDiff(!prevScan ? 0 : prevScan.results.find((prev) => prev.package === r.package)?.subtypeCacheSize || 0, r.subtypeCacheSize || 0)}`,
+            strictSubtypeCacheSize: `${r.strictSubtypeCacheSize}K${calcDiff(!prevScan ? 0 : prevScan.results.find((prev) => prev.package === r.package)?.strictSubtypeCacheSize || 0, r.strictSubtypeCacheSize || 0)}`,
           }
         : {
             package: r.package,
@@ -64,19 +68,42 @@ export const generateReportMarkdown = async (
             totalTime: "",
             memoryUsed: "",
             // analyzeHotSpotMs: "",
+            assignabilityCacheSize: "",
+            identityCacheSize: "",
+            subtypeCacheSize: "",
+            strictSubtypeCacheSize: "",
           },
     );
 
   const tables = {
     plus: tableRows
       .filter((r) => r.types !== "Error")
-      .filter((r) => r.types.includes("+")),
+      .filter((r) => r.types.includes("+") || r.instantiations.includes("+")),
     minus: tableRows
       .filter((r) => r.types !== "Error")
-      .filter((r) => r.types.includes("-")),
+      .filter((r) => r.types.includes("-") || r.instantiations.includes("-")),
+    cacheChanges: tableRows
+      .filter((r) => r.types !== "Error")
+      .filter(
+        (r) =>
+          r.assignabilityCacheSize.includes("+") ||
+          r.assignabilityCacheSize.includes("-") ||
+          r.identityCacheSize.includes("+") ||
+          r.identityCacheSize.includes("-") ||
+          r.subtypeCacheSize.includes("+") ||
+          r.subtypeCacheSize.includes("-") ||
+          r.strictSubtypeCacheSize.includes("+") ||
+          r.strictSubtypeCacheSize.includes("-"),
+      ),
     noChange: tableRows
       .filter((r) => r.types !== "Error")
-      .filter((r) => !r.types.includes("+") && !r.types.includes("-")),
+      .filter(
+        (r) =>
+          !r.types.includes("+") &&
+          !r.types.includes("-") &&
+          !r.instantiations.includes("+") &&
+          !r.instantiations.includes("-"),
+      ),
     error: tableRows.filter((r) => r.types === "Error"),
   };
 
@@ -90,6 +117,10 @@ export const generateReportMarkdown = async (
       { align: "right" }, // totalTime
       { align: "right" }, // memoryUsed
       { align: "right" }, // analyzeHotSpotMs
+      { align: "right" }, // assignabilityCacheSize
+      { align: "right" }, // identityCacheSize
+      { align: "right" }, // subtypeCacheSize
+      { align: "right" }, // strictSubtypeCacheSize
       { align: "left" }, // error
     ],
   } satisfies TablemarkOptions;
@@ -132,15 +163,27 @@ export const generateReportMarkdown = async (
   };
 
   const NO_CHANGE_SUMMARY_TEXT = "- This PR has no significant changes";
+  const hasAnyImportantBuildChanges =
+    tables.minus.length > 0 ||
+    tables.plus.length > 0 ||
+    tables.error.length > 0;
+  const hasAnyImportantCacheChanges = tables.cacheChanges.length > 0;
 
   let summaryText = "";
-  if (!tables.plus.length && !tables.minus.length && !tables.error.length) {
+  if (!hasAnyImportantBuildChanges && !hasAnyImportantCacheChanges) {
     summaryText += NO_CHANGE_SUMMARY_TEXT;
   } else {
-    summaryText += `
+    summaryText += hasAnyImportantBuildChanges
+      ? `
 - ${tables.minus.length} packages become faster
 - ${tables.plus.length} packages become slower
-- ${tables.error.length} packages have errors`;
+- ${tables.error.length} packages have errors
+- ${tables.cacheChanges.length} packages cache changes
+`
+      : "";
+    summaryText += hasAnyImportantCacheChanges
+      ? "- Cache sizes have changed"
+      : "";
   }
 
   const summaryContent: ReportContent = {
@@ -158,6 +201,13 @@ export const generateReportMarkdown = async (
   const contentTableMinus: ReportContent = {
     title: "#### :rotating_light: Slower packages",
     text: tables.plus.length ? tablemark(tables.plus, tablemarkOptions) : null,
+  };
+
+  const contentTableCache: ReportContent = {
+    title: "#### :package: Cache size changes",
+    text: tables.cacheChanges.length
+      ? tablemark(tables.cacheChanges, tablemarkOptions)
+      : null,
   };
 
   let aiResponse = null;
@@ -182,20 +232,27 @@ export const generateReportMarkdown = async (
 3. ユーザはもしも改善や対応、判断が必要であれば何をすべきか知りたい
 
 # YOUR TASK:
-以下のそれぞれの項目を、簡潔さを重視し記載してください(1~2センテンス程に収めることを目指す。以下項目以外の記載は避ける)
-- 影響(必ず1行以内に収めて記載): 変更がリポジトリに与える影響(このPRがマージされた場合に何が起こるかを通知する。上記1に対応し、必ず記載すること)
-- 原因(必ず1行以内に収めて記載): 変更が生じた理由(上記2に対応する。Impactsがない場合は記載しなくてよい)
-- 提案(必ず1行以内に収めて記載): もしも改善や対応、判断が必要であれば、何をすべきかを提案する(上記3に対応する。Impactsがない場合は記載しなくてよい)
-- 備考(よほど重要な補足が必要なければ項目自体を省略): ユーザの理解を助けるための補足情報など
+以下のそれぞれの項目を、簡潔さを重視し記載してください(1~2センテンス程に収めることを目指す。以下項目以外の出力は必ず避ける)
+- 影響(必ず1行以内に収めて記載): 変更がリポジトリに与える影響(このPRがマージされた場合に何が起こるかを通知する。ビルドかIDE(型推論やインテリセンス)に影響がある場合はそのどちらが対象かを記載)
+- 原因(必ず1行以内に収めて記載): 上記の影響が生じた理由
+- 提案(必ず1行以内に収めて記載): もしも改善や対応、判断が必要であれば、何をすべきかを提案する
 
 # 考慮点
 - レポートの指標は"tsc --extendedDiagnostics"コマンドの分析結果を利用しています
 - 分析結果の指標は計測マシンのCPUやメモリ、OSの影響を受けるため不安定であることを考慮し、これらの影響を受けにくいTypesとInstantiationsの指標を中心に分析
 - 指標が悪化または改善した場合は、その理由をgit diffの結果から推測
 
-# 技術的な情報:
+# 技術的な情報: コンパイルについて
 - Types: 型定義の複雑さを示します(コンパイラがプログラム内で認識または作成した型の総数)
-- Instantiations: ジェネリック型の使用頻度と複雑さを示し、コンパイル時間への影響が特に大きい項目です(ジェネリックな型定義に対して、Tの部分に具体的な型を当てはめて新しい型を作成するプロセスです。この数値が極端に大きい場合、複雑なジェネリック型や型定義の再帰的な参照などが多用されており、それがコンパイル時間の増加の主な原因である可能性が高いことを示唆します。型定義の最適化を検討する際の重要な指標となります)
+- Instantiations: ジェネリック型の使用頻度と複雑さを示し、コンパイル時間への影響が特に大きい項目です(ジェネリックな型定義に対して、Tの部分に具体的な型を当てはめて新しい型を作成するプロセスです。この数値が極端に大きい場合、複雑なジェネリック型や型定義の再帰的な参照などが多用されており、それがコンパイル時間の増加の主な原因である可能性が高いことを示唆します。型定義の最適化を検討する際の最重要指標で、Check timeと直接相関し、コンパイル速度の主要な決定要因となる)
+
+# 技術的な情報: IDEの軽量化に役立つ指標について
+- identityCacheSize: 構造的に同一な型同士の比較結果をキャッシュし、IDEが同じ型の構造を再評価する手間を省く
+- assignabilityCacheSize: 型の代入可否（例: let a: T = b）の結果をキャッシュし、IDEがコーディング中の頻繁な代入エラーチェックを高速化する
+- subtypeCacheSize: ある型が別の型の部分型であるかの判定結果をキャッシュし、IDEが複雑な型の互換性を素早く判断できるようにする
+- strictSubtypeCacheSize: strictNullChecks有効時の厳密な型比較の結果をキャッシュし、IDEがnull等の厳格なエラーチェックを瞬時に行えるようにする
+
+# 技術的な情報: コンパイルパフォーマンスの改善における重要指標
 - コンパイルパフォーマンスの改善を目指す際には、特に Instantiations と Types の数値を注視し、型定義をシンプルにできないか検討することが有効です。
   
 # Report:
@@ -207,6 +264,9 @@ ${contentTablePlus.text || ""}
 
 ${contentTableMinus.text ? contentTableMinus.title : ""}
 ${contentTableMinus.text || ""}
+
+${contentTableCache.text ? contentTableCache.title : ""}
+${contentTableCache.text || ""}
 
 # Git diff:
 ${diff}`,
@@ -222,6 +282,9 @@ ${contentTablePlus.text || ""}
 
 ${contentTableMinus.text ? contentTableMinus.title : ""}
 ${contentTableMinus.text || ""}
+
+${contentTableCache.text ? contentTableCache.title : ""}
+${contentTableCache.text || ""}
 
 <p align="right">Compared to ${prevScan ? prevScan.commitHash : "N/A"}</p>
 
