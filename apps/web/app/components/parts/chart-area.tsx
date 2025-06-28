@@ -25,7 +25,13 @@ import {
 } from "~/components/ui/select";
 
 type ChartAreaInteractiveProps = {
-  data: Array<typeof resultTbl.$inferSelect & typeof scanTbl.$inferSelect>;
+  data: Array<
+    typeof scanTbl.$inferSelect &
+      Pick<
+        typeof resultTbl.$inferSelect,
+        "package" | "totalTime" | "traceNumType"
+      >
+  >;
 };
 
 export const description = "Package analysis metrics over time";
