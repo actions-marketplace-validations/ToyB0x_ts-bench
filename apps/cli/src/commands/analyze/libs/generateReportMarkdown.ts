@@ -164,9 +164,7 @@ export const generateReportMarkdown = async (
 
   const NO_CHANGE_SUMMARY_TEXT = "- This PR has no significant changes";
   const hasAnyImportantBuildChanges =
-    tables.minus.length > 0 ||
-    tables.plus.length > 0 ||
-    tables.error.length > 0;
+    tables.minus.length > 0 || tables.plus.length > 0;
   const hasAnyImportantCacheChanges = tables.cacheChanges.length > 0;
 
   let summaryText = "";
@@ -342,7 +340,10 @@ ${aiResponseStructured.impact}
     : summaryContent.text
 }
 
-<details><summary>Details</summary>
+${
+  !hasAnyImportantBuildChanges && !hasAnyImportantCacheChanges
+    ? ""
+    : `<details><summary>Details</summary>
 
 ${contentTablePlus.text ? contentTablePlus.title : ""}
 ${contentTablePlus.text || ""}
@@ -352,6 +353,8 @@ ${contentTableMinus.text || ""}
 
 ${contentTableCache.text ? contentTableCache.title : ""}
 ${contentTableCache.text || ""}
+`
+}
 </details>
 
 <details><summary>Full Details</summary>
@@ -359,10 +362,11 @@ ${contentTableCache.text || ""}
 - TSC Benchmark version: ${version}
 - CPU: ${cpuModelAndSpeeds.join(", ")} (${maxConcurrency} / ${totalCPUs})
 - Diff: 
+    - TotalTime: ${diffSummary.totalTimes}
+    - Analyzed Packages: +${diffSummary.diffPackageNames.added.length} -${diffSummary.diffPackageNames.deleted.length}  
+      ${diffSummary.diffPackageNames.added.length ? "added: " + diffSummary.diffPackageNames.added.join(", ") : ""} ${diffSummary.diffPackageNames.deleted.length ? "deleted: " + diffSummary.diffPackageNames.deleted.join(", ") : ""}
+
 <!-- TODO: 絶対値(リアル秒)表示追加を検討 -->
-  - TotalTime: ${diffSummary.totalTimes}
-  - Analyzed Packages: +${diffSummary.diffPackageNames.added.length} -${diffSummary.diffPackageNames.deleted.length}  
-    ${diffSummary.diffPackageNames.added.length ? "added: " + diffSummary.diffPackageNames.added.join(", ") : ""} ${diffSummary.diffPackageNames.deleted.length ? "deleted: " + diffSummary.diffPackageNames.deleted.join(", ") : ""}
 <!-- TODO: マシンに影響されたないtypesの合計変動表示追加を検討 -->
 ${tables.noChange.length ? "<details><summary>Open: No change pakcages</summary>\n\n" + tablemark(tables.noChange, tablemarkOptions) + "</details>" : ""}
 
