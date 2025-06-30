@@ -314,6 +314,11 @@ export const generateReportMarkdown = async (
 
     console.info({ diff });
 
+    // NOTE: For Gemini models, a token is equivalent to about 4 characters. 100 tokens is equal to about 60-80 English words.
+    const MAX_GEMINI_TOKENS = 1048576; // avoid google gen-ai limit "message":"The input token count (xxx) exceeds the maximum number of tokens allowed (1048576).
+    const APPROXIMATE_MAX_CHAR_LIMIT = MAX_GEMINI_TOKENS / 4; // 1 token = ~4 characters
+    const APPROXIMATE_HALF_CHAR_LIMIT = APPROXIMATE_MAX_CHAR_LIMIT / 2; // half of the limit for safety
+
     const aiResponse = await ai.models.generateContent({
       // TODO: enable switch to gemini-2.5-flash or other models via CLI option
       model: process.env["GEMINI_MODEL"] || "gemini-2.5-flash",
@@ -399,7 +404,7 @@ ${contentTableCache.text ? contentTableCache.title : ""}
 ${contentTableCache.text || ""}
 
 # Git diff:
-${diff}`,
+${diff.length < APPROXIMATE_HALF_CHAR_LIMIT ? diff : `${diff.slice(0, APPROXIMATE_HALF_CHAR_LIMIT)} ..truncated due to exceeding the character limit of ${APPROXIMATE_HALF_CHAR_LIMIT}. Please check the full log for details.`}`,
     });
 
     if (aiResponse?.text) {
