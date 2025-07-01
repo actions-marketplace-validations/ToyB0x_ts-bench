@@ -17,6 +17,40 @@ type ReportContent = {
 //   contents: ReportContent[];
 // };
 
+// test utility
+// const makeNestedCopy = <T>(base: unknown): { parent: T; child: T } => ({
+//   parent: base as T,
+//   child: base as T,
+// });
+//
+// // 10 times loop to create a heavy type
+// const nested1 = {
+//   a: 1,
+//   b: 2,
+//   c: 3,
+//   d: {
+//     e: 4,
+//     f: 5,
+//     g: 6,
+//     h: {
+//       i: 7,
+//       j: 8,
+//       k: 9,
+//       l: { m: 10, n: 11, o: 12, p: { q: 13, r: 14, s: 15 } },
+//     },
+//   },
+// };
+// const nested2 = makeNestedCopy<typeof nested1>(nested1);
+// const nested3 = makeNestedCopy<typeof nested2>(nested2);
+// const nested4 = makeNestedCopy<typeof nested3>(nested3);
+// const nested5 = makeNestedCopy<typeof nested4>(nested4);
+// const nested6 = makeNestedCopy<typeof nested5>(nested5);
+// const nested7 = makeNestedCopy<typeof nested6>(nested6);
+// const nested8 = makeNestedCopy<typeof nested7>(nested7);
+// const nested9 = makeNestedCopy<typeof nested8>(nested8);
+// const nested10 = makeNestedCopy<typeof nested9>(nested9);
+// console.log(nested10);
+
 const REPORT_LANGUAGE_CODE_MAP = {
   en: "english",
   ja: "japanese",
@@ -329,6 +363,10 @@ export const generateReportMarkdown = async (
       model: process.env["GEMINI_MODEL"] || "gemini-2.5-flash",
       config: {
         responseMimeType: "application/json",
+        systemInstruction: `You are a helpful AI assistant that analyzes TypeScript code changes and their impact on build and IDE performance. Your task is to provide a concise report on the impact of the changes based on the provided metrics and git diff.
+Response Language:
+You must use language ${REPORT_LANGUAGE_CODE_MAP[reportLanguageCode]} for your responses as user prefer language.
+`,
         responseSchema: {
           // - 影響: impact
           // - 原因: reason
@@ -345,32 +383,24 @@ eg2. 型計算量が増えたためxxx個のパッケージの(ビルド|IDE|ビ
 (変動がある場合は影響具合を "X.Y%程度"という簡潔な記載のかっこ書きで追加)
 
 eg3. 特筆すべき変化はありません (測定誤差程度の変動のみ)
-
-(Responses must be written in ${REPORT_LANGUAGE_CODE_MAP[reportLanguageCode]})
 `,
             },
             reason: {
               type: "string",
               description: `Git diffの結果から推測される、types、instantiationsまたはキャッシュ関連の指標に変動が影響が生じた理由(出来るだけ以下フォーマットで簡潔に記載。複数の原因がありそうな場合は適宜フォーマットを調整)
 xxxのファイルに対するyyyの変更により、zzzが変動した可能性があります
-
-(Responses must be written in ${REPORT_LANGUAGE_CODE_MAP[reportLanguageCode]})
 `,
             },
             suggestion: {
               type: "string",
-              description: `提案(必ず1行以内に収めて記載): もしも改善や対応、判断が必要であれば、何をすべきかを提案する
-(Responses must be written in ${REPORT_LANGUAGE_CODE_MAP[reportLanguageCode]})
-`,
+              description:
+                "提案(必ず1行以内に収めて記載): もしも改善や対応、判断が必要であれば、何をすべきかを提案する",
             },
           },
           required: ["impact", "reason", "suggestion"],
         },
       },
-      contents: `
-# Response Language:
-- Responses must be written in ${REPORT_LANGUAGE_CODE_MAP[reportLanguageCode]}
-      
+      contents: `    
 # What users want:
 1. ユーザはTSCコマンドやIDEの型推論、インテリセンスが遅くなるのを防止したい(機能追加やリファクタ内容に見合った性能劣化は許容するが、無駄に遅くなるのは避けたい)
 2. ユーザはTSCコマンドやIDEの型推論、インテリセンスが遅くなる可能性がありそうな場合にその理由をしりたい
@@ -436,11 +466,11 @@ ${
     ? `
 ${aiResponseStructured.impact}
 
-<details><summary><strong>原因と提案</strong></summary>
+<details><summary><strong>${reportLanguageCode === "ja" ? "原因と提案" : "Reason and Suggestion"}</strong></summary>
 
-- **原因**:  
+- **${reportLanguageCode === "ja" ? "原因" : "Reason"}**:  
   ${aiResponseStructured.reason}
-- **提案**:  
+- **${reportLanguageCode === "ja" ? "案" : "Suggestion"}**:  
   ${aiResponseStructured.suggestion}
 </details>
 
