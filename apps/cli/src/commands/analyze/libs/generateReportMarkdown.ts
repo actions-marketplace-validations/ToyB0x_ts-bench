@@ -345,18 +345,23 @@ eg2. 型計算量が増えたためxxx個のパッケージの(ビルド|IDE|ビ
 (変動がある場合は影響具合を "X.Y%程度"という簡潔な記載のかっこ書きで追加)
 
 eg3. 特筆すべき変化はありません (測定誤差程度の変動のみ)
+
+(Responses must be written in ${REPORT_LANGUAGE_CODE_MAP[reportLanguageCode]})
 `,
             },
             reason: {
               type: "string",
               description: `Git diffの結果から推測される、types、instantiationsまたはキャッシュ関連の指標に変動が影響が生じた理由(出来るだけ以下フォーマットで簡潔に記載。複数の原因がありそうな場合は適宜フォーマットを調整)
 xxxのファイルに対するyyyの変更により、zzzが変動した可能性があります
+
+(Responses must be written in ${REPORT_LANGUAGE_CODE_MAP[reportLanguageCode]})
 `,
             },
             suggestion: {
               type: "string",
-              description:
-                "提案(必ず1行以内に収めて記載): もしも改善や対応、判断が必要であれば、何をすべきかを提案する",
+              description: `提案(必ず1行以内に収めて記載): もしも改善や対応、判断が必要であれば、何をすべきかを提案する
+(Responses must be written in ${REPORT_LANGUAGE_CODE_MAP[reportLanguageCode]})
+`,
             },
           },
           required: ["impact", "reason", "suggestion"],
@@ -472,8 +477,6 @@ ${contentTableCache.text || ""}
     - Analyzed Packages: +${diffSummary.diffPackageNames.added.length} -${diffSummary.diffPackageNames.deleted.length}  
       ${diffSummary.diffPackageNames.added.length ? `added: ${diffSummary.diffPackageNames.added.join(", ")}` : ""} ${diffSummary.diffPackageNames.deleted.length ? `deleted: ${diffSummary.diffPackageNames.deleted.join(", ")}` : ""}
 
-<!-- TODO: 絶対値(リアル秒)表示追加を検討 -->
-<!-- TODO: マシンに影響されたないtypesの合計変動表示追加を検討 -->
 ${tables.noChange.length ? `<details><summary>Open: No change pakcages</summary>\n\n${tablemark(tables.noChange, tablemarkOptions)}</details>` : ""}
 
 ${tables.error.length ? `<details><summary>Open: Error packages</summary>\n\n${tablemark(tables.error, tablemarkOptions)}</details>` : ""}
