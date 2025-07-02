@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import packageJson from "../package.json";
+import { packDir } from "./libs";
 
 // Create an MCP server
 const server = new McpServer({
@@ -9,18 +10,25 @@ const server = new McpServer({
   version: packageJson.version,
 });
 
-// Add an addition tool
-// server.registerTool(
-//   "add",
-//   {
-//     title: "Addition Tool",
-//     description: "Add two numbers",
-//     inputSchema: { a: z.number(), b: z.number() },
-//   },
-//   async ({ a, b }) => ({
-//     content: [{ type: "text", text: String(a + b) }],
-//   }),
-// );
+/**
+ * Extracts type signatures for ts and tsx files in a specified directory and provides a very useful summary for analysis.
+ */
+server.registerTool(
+  "extract-type-signatures",
+  {
+    title: "Extract TypeScript Type Signatures",
+    description:
+      "Extracts type signatures for ts and tsx files in a specified directory and provides a very useful summary for analysis",
+    inputSchema: {
+      dir: z
+        .string()
+        .describe("Directory path to analyze for TypeScript files"),
+    },
+  },
+  async ({ dir }) => ({
+    content: [{ type: "text", text: await packDir(dir) }],
+  }),
+);
 
 /**
  * Sample resource that provides application information.
@@ -99,6 +107,8 @@ server.registerPrompt(
         content: {
           type: "text",
           text: `I need you to optimize TypeScript performance in a Prisma project using this enhanced 5-step process:
+IMPORTANT TOOLS: 
+- \`extract-type-signatures\`: Analyze TypeScript files for type signatures and performance issues (very useful for this process)
 
 STEP 1: Notify user of process overview
 - Explain that this process requires 3-10 user confirmations
