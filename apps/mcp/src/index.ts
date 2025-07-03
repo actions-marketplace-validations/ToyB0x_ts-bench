@@ -30,158 +30,142 @@ server.registerTool(
   }),
 );
 
-/**
- * Sample resource that provides application information.
- */
-// Static resource
-// server.registerResource(
-//   "mcp-app-info",
-//   "config://app-info",
-//   {
-//     title: "Application Information",
-//     description: "Application information data like name, version, etc.",
-//     mimeType: "text/plain",
-//   },
-//   async (uri) => ({
-//     contents: [
-//       {
-//         uri: uri.href,
-//         text: `Application Name: ${packageJson.name}\nVersion: ${packageJson.version}`,
-//       },
-//     ],
-//   }),
-// );
-
-/**
- * List files with a given pattern.
- */
-// server.registerResource(
-//   "list-files",
-//   new ResourceTemplate("list-file://{pattern}", { list: undefined }),
-//   {
-//     title: "Grep Files",
-//     description: "Grep files with a given pattern",
-//   },
-//   async (uri, { pattern }) => ({
-//     contents: [
-//       {
-//         uri: uri.href,
-//         text: `Hello, ${pattern}!`,
-//       },
-//     ],
-//   }),
-// );
-
-// server.registerPrompt(
-//   "grep-by-ai",
-//   {
-//     title: "Grep Files by AI",
-//     description: "Grep files with a given pattern using AI(You)",
-//     argsSchema: { pattern: z.string() },
-//   },
-//   ({ pattern }) => ({
-//     messages: [
-//       {
-//         role: "user",
-//         content: {
-//           type: "text",
-//           text: `Find files that contain below string under current dir:\n\n${pattern}`,
-//         },
-//       },
-//     ],
-//   }),
-// );
-
 server.registerPrompt(
   "prisma-typescript-optimization",
   {
     title: "Prisma TypeScript Performance Optimization",
     description:
       "Detect and fix TypeScript performance issues in Prisma projects through an enhanced 6-step process",
-    argsSchema: { projectPath: z.string().optional() },
   },
-  ({ projectPath = "." }) => ({
+  () => ({
     messages: [
       {
         role: "user",
         content: {
           type: "text",
-          text: `I need you to optimize TypeScript performance in a Prisma project using this enhanced 5-step process:
-IMPORTANT TOOLS: 
-- \`extract-type-signatures\`: Analyze TypeScript files for type signatures and performance issues (very useful for this process)
+          text: `Optimize TypeScript performance in Prisma projects through systematic analysis and refactoring.
 
-STEP 1: Notify user of process overview
-- Explain that this process requires 3-10 user confirmations
-- Wait for user confirmation before proceeding
+**TOOL**: Use \`extract-type-signatures\` to analyze TypeScript files for performance issues.
 
-STEP 2: Detect problematic code patterns
-- Search for files containing "PrismaClient" type references in function signatures (ignore node_modules and .git directories)
-- Look for patterns like: \`(prismaClient: PrismaClient)\` or similar direct type references
-- Identify files that might benefit from \`typeof\` optimization
-- Check for duplicate PrismaClient instantiations across files
-- Present findings to user with file paths and line numbers
+**SETUP**:
+1. Confirm user to select language: 1.English or 2.日本語 (wait for user input)
+2. Explain the whole optimization process in selected language
+3. List available packages (search for package.json files) with selection numbers
+4. User selects target directory/package for optimization (wait for user input)
 
-STEP 3: Benchmark current performance
-- For monorepos: First detect all packages by finding package.json files, then ask user which specific packages to analyze if there are many (>3)
-- Prioritize packages with the most PrismaClient references found in STEP 2
-- Check each selected package directory for tsconfig.json and run \`tsc --noEmit --extendedDiagnostics\` in directories that have it
-- For single repos: Run \`tsc --noEmit --extendedDiagnostics\` in the project directory: ${projectPath}
-- Skip directories without tsconfig.json (this is fine for packages that don't use TypeScript)
-- Process packages sequentially, one at a time
-- Extract and present key metrics: type count, instantiations, and compilation time
-- Show these baseline numbers to user
+**PROCESS**:
 
-STEP 4: Plan shared client architecture
-- Analyze current PrismaClient initialization patterns in the target package(s)
-- Identify duplicate initialization code that should be consolidated
-- Create a shared client instance file if not exists
-- Plan the typeof reference strategy to avoid type errors
-- Present the architectural plan to user for approval
+**STEP 1: Pattern Detection**
+- Search for problematic PrismaClient patterns (exclude node_modules/.git):
+  - Direct type usage: \`(prismaClient: PrismaClient)\`
+  - Duplicate instantiations: multiple \`new PrismaClient()\`
+  - Complex type relationships in function signatures
+- Present findings with file paths and line numbers
 
-STEP 5: Confirm changes (IMPORTANT: ASK FOR USER APPROVAL)
-- Present the proposed changes clearly showing before/after code
-- Include both the type changes AND the shared client consolidation
-- Show specific file paths and estimated number of changes
-- Ask user for explicit approval before making any modifications
-- Only proceed if user confirms
+**STEP 2: Baseline Measurement**
+- Run \`tsc --noEmit --extendedDiagnostics\` in packages with tsconfig.json
+- Extract metrics: type count, instantiations, compilation time
+- Present baseline numbers for comparison
 
-STEP 6: Apply fixes and re-benchmark 
-- Create shared PrismaClient instance and type exports
-- Replace direct PrismaClient instantiations with shared instance usage
-- Replace type patterns like \`(prismaClient: PrismaClient)\` with \`(prismaClient: typeof sharedClient)\`
-- Update imports to use the shared types
-- Run \`tsc --noEmit --extendedDiagnostics\` again in the same directories as STEP 3
-- Process packages sequentially, one at a time (same as STEP 3)
-- Skip directories without tsconfig.json (same as STEP 3)
-- Calculate and present improvement percentages (type count, instantiations, compilation time)
-- Verify that TypeScript compilation still succeeds after changes
+**STEP 3: Architecture Planning**
+- Analyze current PrismaClient initialization patterns
+- Plan shared client instance strategy OR factory function approach
+- Design \`typeof\` reference replacements
+- **IMPORTANT**: Select appropriate refactoring scope - avoid forcing all clients into single pattern
+- Present architectural plan for user approval
 
-**Problematic patterns to fix:**
-1. \`async (prismaClient: PrismaClient) => {}\` → \`async (prismaClient: typeof sharedClient) => {}\`
-2. \`function saveFn(db: PrismaClient)\` → \`function saveFn(db: typeof sharedClient)\`
-3. \`constructor(prismaClient: PrismaClient)\` → \`constructor(prismaClient: typeof sharedClient)\`
-4. Duplicate \`new PrismaClient()\` instantiations → Shared client pattern
-5. Import consolidation: Replace multiple PrismaClient imports with shared type imports
+**STEP 4: Change Preview**
+- Show before/after code examples
+- List specific files and number of changes
+- **Require explicit user approval before proceeding**
 
-**Implementation Requirements:**
-- Create a shared client instance before replacing type references
-- Use \`typeof sharedClient\` pattern to maintain type safety
-- Consolidate duplicate PrismaClient configurations into shared utility
-- Update all imports to use shared types to avoid circular dependencies
-- Test TypeScript compilation after each major change
+**STEP 5: Implementation with Verification**
+Apply changes incrementally with verification at each stage:
 
-**Example shared client pattern:**
+a) Create shared client instance and exports
+   - Run \`tsc --noEmit --diagnostics\` → report improvements
+
+b) Replace duplicate PrismaClient instantiations
+   - Run \`tsc --noEmit --diagnostics\` → report cumulative improvements
+
+c) Update type patterns: \`PrismaClient\` → \`typeof sharedClient\`
+   - Run \`tsc --noEmit --diagnostics\` → report cumulative improvements
+
+d) Final verification
+   - Run \`tsc --noEmit --extendedDiagnostics\`
+   - Calculate improvement percentages
+   - Show progression: baseline → stage 1 → stage 2 → stage 3 → final
+
+**STEP 6: Testing** (with user confirmation)
+- Package-specific: \`pnpm --filter <package> test\` and \`build\`
+- Repository-wide: \`pnpm test build typecheck lint\`
+- Only proceed if all checks pass
+
+**STEP 7: Pull Request**
+- Confirm PR creation with user
+- Create new branch and commit changes
+- Include detailed description with benchmarks
+
+**STEP 8: Next Steps**
+- For monorepos: Ask to continue with remaining packages
+- Optional: Generate improvement report for future MCP enhancements
+
+**PATTERNS TO FIX** (selective approach - mixed patterns are acceptable):
+1. \`(prismaClient: PrismaClient)\` → \`(prismaClient: typeof sharedClient)\`
+2. \`new PrismaClient()\` duplicates → Shared instance
+3. Dynamic initialization → Factory function + \`ReturnType<typeof createClient>\`
+4. Complex types → Minimal interfaces: \`interface IPrismaMinimal { table: PrismaClient['table']; }\`
+
+**IMPORTANT PERFORMANCE INSIGHT**: 
+Simple \`const prisma = new PrismaClient()\` initialization has minimal TypeScript performance impact. The real performance bottlenecks occur when:
+- PrismaClient types are used in function parameters: \`(prismaClient: PrismaClient) => {}\`
+- Class constructors with PrismaClient typed parameters: \`constructor(private prisma: PrismaClient)\`
+- Variables are passed to these typed parameters, triggering extensive type checking
+- Large type compatibility checks happen during assignment/function calls
+
+**FOCUS AREAS for optimization**:
+- Function signatures with PrismaClient types where variables are actually passed
+- Class constructors that receive PrismaClient instances as parameters
+- Skip optimization for simple initialization without type usage
+- Prioritize any location where PrismaClient instances are passed as arguments
+
+**IMPORTANT**: Don't force all clients into a single pattern. Select improvements based on:
+- Code clarity and maintainability
+- Performance impact
+- Risk of breaking changes
+
+**CLIENT PATTERNS EXAMPLES**:
 \`\`\`typescript
-// db/client.ts
-import { PrismaClient } from '@prisma/client'
-export const client = new PrismaClient()
+// ✅ Pattern 1: Static shared client
+// Before
+const prisma1 = new PrismaClient({ log: ['query'] })
+const prisma2 = new PrismaClient({ log: ['query'] })
 
-// other files
-import { client } from './db/client'
-async function myFunction(db: typeof client) { ... }
+// After
+export const client = new PrismaClient({ log: ['query'] })
+function myFunction(db: typeof client) { ... }
+
+// ✅ Pattern 2: Dynamic initialization with factory
+// Before
+const config = getConfig()
+const prisma1 = new PrismaClient(config)
+const prisma2 = new PrismaClient(config)
+
+// After
+const createPrismaClient = (config: Config) => new PrismaClient(config)
+export type ClientType = ReturnType<typeof createPrismaClient>
+function myFunction(db: ClientType) { ... }
+
+// ✅ Pattern 3: Mixed approach (acceptable in same package)
+export const staticClient = new PrismaClient({ log: ['query'] })
+export const createDynamicClient = (env: string) => new PrismaClient({ datasources: { db: { url: getUrl(env) } } })
+export type DynamicClientType = ReturnType<typeof createDynamicClient>
+
+// ❌ BAD: Loses constructor arguments
+export const client = new PrismaClient() // Lost configuration!
 \`\`\`
 
-Start with STEP 2 by searching for problematic patterns in the codebase.`,
+Begin by searching for problematic patterns in the selected directory.`,
         },
       },
     ],
