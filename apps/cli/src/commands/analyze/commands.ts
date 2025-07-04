@@ -16,7 +16,7 @@ export const makeAnalyzeCommand = () => {
     .command("tsc", { isDefault: true })
     .description("check tsc performance")
     .addOption(
-      new Option("-l, --lang <lang>", "language of report")
+      new Option("-l, --lang <string>", "language of report")
         .choices(["en", "ja"])
         .default("en", "English"),
     )
@@ -100,7 +100,7 @@ export const makeAnalyzeCommand = () => {
       ).default(180),
     )
     .addOption(
-      new Option("-l, --lang <lang>", "language of report")
+      new Option("-l, --lang <string>", "language of report")
         .choices(["en", "ja"])
         .default("en", "English"),
     )
