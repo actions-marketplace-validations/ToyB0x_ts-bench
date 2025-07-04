@@ -2,14 +2,15 @@ import { execSync } from "node:child_process";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
+export const MCP_TOOL_NAME__SHOW_MONOREPO_INTERNAL_DEPENDENCY_GRAPH =
+  "show-monorepo-internal-dependency-graph";
+
 /**
  * Extracts type signatures for ts and tsx files in a specified directory and provides a very useful summary for analysis.
  */
-export const registerToolShowMonorepoInternalDependencyGraph = (
-  server: McpServer,
-) => {
+export const showMonorepoInternalDependencyGraph = (server: McpServer) => {
   server.registerTool(
-    "show-monorepo-internal-dependency-graph",
+    MCP_TOOL_NAME__SHOW_MONOREPO_INTERNAL_DEPENDENCY_GRAPH,
     {
       title: "Show Monorepo Internal Dependency Graph",
       description:
