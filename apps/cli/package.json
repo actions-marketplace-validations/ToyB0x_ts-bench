@@ -1,6 +1,6 @@
 {
   "name": "@ts-bench/cli",
-  "version": "0.0.35",
+  "version": "0.0.36",
   "type": "module",
   "files": [
     "dist"
@@ -21,24 +21,23 @@
   },
   "dependencies": {
     "@commander-js/extra-typings": "14.0.0",
-    "@google/genai": "1.8.0",
+    "@google/genai": "1.20.0",
     "@supercharge/promise-pool": "3.2.0",
     "@ts-bench/db": "workspace:*",
     "@typescript/analyze-trace": "0.10.1",
-    "commander": "14.0.0",
+    "commander": "14.0.1",
     "simple-git": "3.28.0",
     "tablemark": "3.1.0",
     "valibot": "1.1.0"
   },
   "devDependencies": {
     "@tsconfig/strictest": "2.0.5",
-    "@types/node": "24.0.10",
+    "@types/node": "24.5.2",
     "vitest": "3.2.4",
     "tsup": "8.5.0",
-    "typescript": "5.8.3"
+    "typescript": "5.9.2"
   },
   "author": "ToyB0x",
-  "license": "MIT",
   "homepage": "https://github.com/ToyB0x/ts-bench",
   "bugs": {
     "url": "https://github.com/ToyB0x/ts-bench/issues"

@@ -1,4 +1,4 @@
-import type { resultTbl, scanTbl } from "@ts-bench/db";
+import type { resultTbl, scanTbl } from "@ts-bench/db/browser";
 import * as React from "react";
 import { Area, AreaChart, XAxis } from "recharts";
 import {
@@ -137,7 +137,7 @@ export function ChartAreaInteractive({ data }: ChartAreaInteractiveProps) {
             }}
           >
             <defs>
-              {/* biome-ignore lint/nursery/useUniqueElementIds: chart gradients */}
+              {/* biome-ignore lint/correctness/useUniqueElementIds: chart gradients */}
               <linearGradient id="fillTotalTime" x1="0" y1="0" x2="0" y2="1">
                 <stop
                   offset="5%"
@@ -150,7 +150,7 @@ export function ChartAreaInteractive({ data }: ChartAreaInteractiveProps) {
                   stopOpacity={0.1}
                 />
               </linearGradient>
-              {/* biome-ignore lint/nursery/useUniqueElementIds: chart gradients */}
+              {/* biome-ignore lint/correctness/useUniqueElementIds: chart gradients */}
               <linearGradient
                 id="fillTypeAndInstantiations"
                 x1="0"

@@ -10,25 +10,25 @@
     "db:seed": "turbo run db:seed",
     "lint": "biome check .",
     "lint:fix": "biome check . --write",
-    "test": "turbo run test",
+    "test": "turbo run test -- --watch=false",
     "typecheck": "turbo run typecheck",
+    "check": "pnpm lint && pnpm typecheck && pnpm build && pnpm test",
     "ci:publish": "pnpm publish --recursive --access=public"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.0.6",
-    "@changesets/cli": "2.29.5",
-    "turbo": "2.5.4"
+    "@biomejs/biome": "2.2.4",
+    "@changesets/cli": "2.29.7",
+    "turbo": "2.5.6"
   },
   "engines": {
-    "node": "24.3.0"
+    "node": "24.8.0"
   },
-  "packageManager": "pnpm@10.12.4",
+  "packageManager": "pnpm@10.17.1",
   "volta": {
-    "node": "24.3.0",
-    "pnpm": "10.12.4"
+    "node": "24.8.0",
+    "pnpm": "10.17.1"
   },
   "author": "ToyB0x",
-  "license": "MIT",
   "homepage": "https://github.com/ToyB0x/ts-bench",
   "bugs": {
     "url": "https://github.com/ToyB0x/ts-bench/issues"

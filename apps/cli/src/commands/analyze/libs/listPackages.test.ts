@@ -15,6 +15,11 @@ describe("listPackages", () => {
         relativePathFromRoot: "apps/cli",
       },
       {
+        absolutePath: `${rootDir}/packages/core`,
+        name: "@ts-bench/core",
+        relativePathFromRoot: "packages/core",
+      },
+      {
         absolutePath: `${rootDir}/packages/db`,
         name: "@ts-bench/db",
         relativePathFromRoot: "packages/db",
@@ -23,6 +28,41 @@ describe("listPackages", () => {
         absolutePath: `${rootDir}/apps/mcp`,
         name: "@ts-bench/mcp",
         relativePathFromRoot: "apps/mcp",
+      },
+      {
+        absolutePath: `${rootDir}/examples/prisma/base`,
+        name: "@ts-bench/prisma-base",
+        relativePathFromRoot: "examples/prisma/base",
+      },
+      {
+        absolutePath: `${rootDir}/examples/prisma/heavy`,
+        name: "@ts-bench/prisma-heavy",
+        relativePathFromRoot: "examples/prisma/heavy",
+      },
+      {
+        absolutePath: `${rootDir}/examples/prisma/heavySaveFn`,
+        name: "@ts-bench/prisma-heavy-save-fn",
+        relativePathFromRoot: "examples/prisma/heavySaveFn",
+      },
+      {
+        absolutePath: `${rootDir}/examples/prisma/interface`,
+        name: "@ts-bench/prisma-interface",
+        relativePathFromRoot: "examples/prisma/interface",
+      },
+      {
+        absolutePath: `${rootDir}/examples/prisma/simple`,
+        name: "@ts-bench/prisma-simple",
+        relativePathFromRoot: "examples/prisma/simple",
+      },
+      {
+        absolutePath: `${rootDir}/examples/prisma/typeof`,
+        name: "@ts-bench/prisma-typeof",
+        relativePathFromRoot: "examples/prisma/typeof",
+      },
+      {
+        absolutePath: `${rootDir}/examples/prisma/typeofSaveFn`,
+        name: "@ts-bench/prisma-typeof-save-fn",
+        relativePathFromRoot: "examples/prisma/typeofSaveFn",
       },
       {
         absolutePath: `${rootDir}/packages/utils`,

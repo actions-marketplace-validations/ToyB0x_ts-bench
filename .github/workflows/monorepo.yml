@@ -31,15 +31,14 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Check out
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
 
       - name: Setup & Restore Node cache
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          cache: 'pnpm'
           node-version-file: 'package.json'
 
       - name: Install all packages
@@ -60,11 +59,6 @@ jobs:
 
       - name: Build check
         run: pnpm build
-        env:
-          DB_FILE_NAME: ${{ github.workspace }}/${{ env.DB_FILE_NAME_TEST }}
-
-      - name: Pre-Render test site (check command with seed)
-        run: pnpm build:prerender:with-seed
         env:
           DB_FILE_NAME: ${{ github.workspace }}/${{ env.DB_FILE_NAME_TEST }}
 
@@ -99,7 +93,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Check out
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: ${{ inputs.analyze-size != '' && inputs.analyze-size || 2 }} # 変更差分の原因分析のため、最低2のfetch-depthが必要
 
@@ -113,9 +107,8 @@ jobs:
         uses: pnpm/action-setup@v4
 
       - name: Setup & Restore Node cache
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          cache: 'pnpm'
           node-version-file: 'package.json'
 
       - name: Install all packages
@@ -138,6 +131,8 @@ jobs:
 
       - name: Generate Remix Types via Type check (run typegen command)
         run: pnpm typecheck
+        env:
+          DB_FILE_NAME: ${{ github.workspace }}/${{ env.DB_FILE_NAME_REPORT }}
 
       - name: Download previous main branch report
         uses: dawidd6/action-download-artifact@v11
@@ -178,16 +173,18 @@ jobs:
           name: ${{ env.UPLOAD_ARTIFACT_NAME }}
           path: ${{ github.workspace }}/${{ env.DB_FILE_NAME_REPORT }}
 
-      - name: Pre-Render report site
+      - name: Copy generated DB to SPA dir (Prepare web app build)
         if: github.ref == 'refs/heads/main' # Only upload on main branch
-        run: pnpm build:prerender
-        env:
-          DB_FILE_NAME: ${{ github.workspace }}/${{ env.DB_FILE_NAME_REPORT }}
+        run: cp ${{ github.workspace }}/${{ env.DB_FILE_NAME_REPORT }} apps/web/public/report.db
+
+      - name: Re-Build web app with db file
+        run: pnpm build
+        working-directory: apps/web
 
       - id: deployment
         if: github.ref == 'refs/heads/main' # Only upload on main branch
         name: Upload static web files as artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: apps/web/build/client
 

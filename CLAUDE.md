@@ -2,43 +2,130 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Build/Test Commands
-- `pnpm dev` - Start development servers
-- `pnpm build` - Build all packages
-- `pnpm build:prerender` - Build web app with prerendering
-- `pnpm build:prerender:with-seed` - Build with database seeding
-- `pnpm test` - Run all tests across packages
-- `pnpm typecheck` - Type check all packages
-- `pnpm lint` - Check code formatting and linting
-- `pnpm lint:fix` - Fix code formatting and linting issues
-- `pnpm db:generate` - Generate Drizzle client
-- `pnpm db:migrate` - Run database migrations
-- `pnpm db:seed` - Seed database
-- Single test: `pnpm --filter <package> test` (e.g., `pnpm --filter cli test`)
-- Web dev: `pnpm --filter web dev` - Run web app in development mode
+## Project Overview
 
-## Code Style Guidelines
-- **Formatter**: Uses Biome with double quotes (`"`) and space indentation
-- **Imports**: Use `import * as moduleName` for Node.js modules (e.g., `import * as fs from "node:fs"`)
-- **Imports**: Named imports for libraries (e.g., `import { Command } from "commander"`)
-- **Imports**: Organize imports automatically via Biome
-- **Error Handling**: Use try-catch blocks with `console.error` and `process.exit(1)`
-- **Functions**: Prefer arrow function syntax (`const func = () => {}`) over function declarations
-- **Testing**: Uses Vitest with `describe`, `it`, `expect` patterns
-- **Types**: Prefer TypeScript with strict typing (@tsconfig/strictest)
-- **Naming**: Use camelCase for variables/functions, PascalCase for classes/types
-- **Database**: Uses Drizzle ORM with SQLite
-- **Monorepo**: Uses pnpm workspaces with Turbo for task orchestration
-- **Node Version**: Requires Node.js >=24
-- **Build Tool**: Uses tsup for CLI builds, standard TypeScript compilation
-- **Comments**: Use `biome-ignore` comments for necessary linting exceptions
+TS Bench is an AI-powered TypeScript performance monitoring and optimization platform consisting of:
+- **CLI tool** (`@ts-bench/cli`): Analyzes TypeScript compilation performance
+- **Web app** (`@ts-bench/web`): Visualizes performance metrics with graphs and AI insights
+- **MCP tool** (`@ts-bench/mcp`): Model Context Protocol integration for Claude
+- **Database** (`@ts-bench/db`): Shared SQLite database layer using Drizzle ORM
 
-## Project Architecture
-This is **TS Bench** - a TypeScript performance monitoring and repository analysis tool with:
+## Common Commands
 
-- **CLI Tool** (`apps/cli`): Command-line interface for repository analysis
-- **Web Dashboard** (`apps/web`): React Router v7 app for viewing analysis results  
-- **Database Package** (`packages/db`): Drizzle ORM schema and utilities
-- **Monorepo**: pnpm workspaces with Turbo orchestration
+### Development
+```bash
+# Run development servers (uses turbo)
+pnpm dev
 
-The tool analyzes TypeScript codebases, tracks performance metrics, and provides insights through both CLI and web interfaces. Database file location is configured via `DB_FILE_NAME` environment variable.
+# Run specific app in dev mode
+pnpm --filter cli dev
+pnpm --filter web dev
+pnpm --filter mcp dev
+```
+
+### Build & Test
+```bash
+# Build all packages
+pnpm build
+
+# Run all tests
+pnpm test
+
+# Run tests for specific package
+pnpm --filter cli test
+pnpm --filter utils test
+
+# Type checking
+pnpm typecheck
+
+# Linting (uses Biome)
+pnpm lint
+pnpm lint:fix
+
+# Complete check (lint + typecheck + build + test)
+pnpm check
+```
+
+### Database
+```bash
+# Generate Drizzle schema
+pnpm db:generate
+
+# Run migrations
+pnpm db:migrate
+
+# Seed database
+pnpm db:seed
+```
+
+### Web App Specific
+```bash
+# Prerender static site
+pnpm build
+
+# Start static server
+pnpm --filter web start
+```
+
+### CLI Tool Usage
+```bash
+# Run CLI locally
+pnpm --filter cli execute
+pnpm --filter cli analyze
+
+# Test via npx
+npx @ts-bench/cli
+```
+
+## Architecture
+
+### Monorepo Structure
+- Uses **pnpm workspaces** with Turbo for task orchestration
+- **Node 24.6.0** and **pnpm 10.14.0** (managed via Volta)
+- TypeScript 5.9.2 with strict configuration
+
+### Key Dependencies
+- **Turbo**: Build system with caching and task dependencies
+- **Biome**: Linting and formatting (replaces ESLint/Prettier)
+- **Drizzle ORM**: Database abstraction with SQLite/LibSQL
+- **React Router v7**: SPA mode for web app
+- **Vitest**: Testing framework
+- **tsup**: Build tool for library packages
+
+### Database Architecture
+- SQLite database with Drizzle ORM
+- Schema defined in `packages/db/src/schema/`
+- Migrations in `packages/db/drizzle/`
+- Supports both local SQLite and remote LibSQL connections
+- Environment variable `DB_FILE_NAME` controls database location
+
+### Web App Architecture
+- React Router v7 in SPA mode (SSR disabled)
+- Tailwind CSS for styling with shadcn/ui components
+- Recharts for data visualization
+- Can work with WASM SQLite for browser-based database access
+
+### CLI Architecture
+- Commander.js for CLI commands
+- Analyzes TypeScript performance using `@typescript/analyze-trace`
+- Saves results to SQLite database
+- Supports AI-powered insights via Google Gemini API
+
+### MCP Integration
+- Provides tools for TypeScript performance analysis
+- Includes prompts for optimization suggestions
+- Integrates with Claude for AI-assisted development
+
+## Testing
+
+Tests use Vitest and are located alongside source files as `*.test.ts`. Run tests with:
+```bash
+pnpm test                    # All tests
+pnpm --filter cli test      # CLI tests only
+pnpm --filter utils test    # Utils tests only
+```
+
+## Important Notes
+
+- Database operations are not cached in Turbo due to state changes
+- Use `pnpm check` on task check-point and before committing to ensure code quality

@@ -1,6 +1,6 @@
 {
   "name": "@ts-bench/mcp",
-  "version": "0.0.1-alpha.0",
+  "version": "0.0.1",
   "type": "module",
   "scripts": {
     "dev": "tsup --watch",
@@ -10,20 +10,19 @@
   },
   "devDependencies": {
     "@tsconfig/strictest": "2.0.5",
-    "@types/node": "24.0.10",
+    "@types/node": "24.5.2",
     "tsup": "8.5.0",
-    "typescript": "5.8.3",
+    "typescript": "5.9.2",
     "vitest": "3.2.4"
   },
   "author": "ToyB0x",
-  "license": "MIT",
   "homepage": "https://github.com/ToyB0x/ts-bench",
   "bugs": {
     "url": "https://github.com/ToyB0x/ts-bench/issues"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.15.0",
-    "repomix": "1.0.0",
-    "zod": "3.25.72"
+    "@modelcontextprotocol/sdk": "1.18.1",
+    "repomix": "1.6.0",
+    "zod": "3.25.76"
   }
 }
